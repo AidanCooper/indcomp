@@ -5,12 +5,12 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(
-    name="indirectcomp",
+    name="indcomp",
     version="0.1.0",
     description="Performs indirect comparison analyses",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://github.com/AidanCooper/indirectcomp",
+    url="https://github.com/AidanCooper/indcomp",
     author="Aidan Cooper",
     author_email="aidan@aidancooper.co.uk",
     keywords=["indirect", "treatment", "comparison", "MAIC", "adjusted"],
@@ -20,7 +20,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
     ],
-    packages=["indirectcomp"],
+    packages=["indcomp"],
     include_package_data=True,
     install_requires=[],
 )
