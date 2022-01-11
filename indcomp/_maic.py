@@ -6,7 +6,7 @@ see Signorovich et al (2012) (https://doi.org/10.1016/j.jval.2012.05.004).
 This implementation mirrors NICE's guidance in DSU Technical Support Document 18.
 """
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -66,7 +66,20 @@ class MAIC:
         return np.dot(np.exp(np.matmul(X, params)), X)
 
     def calc_weights(self):
-        """Calculate weights for each patient in `df_index`"""
+        """Calculate weights for each patient in `df_index`
+
+        Attributes
+        ----------
+        a1_ : np.array(float)
+            The optimised values for alpha1
+        weights_ : np.array(float)
+            The calculated weights
+        weights_scaled_ : np.array(float)
+            The calculated weights, rescaled such that they sum to the size of the
+            population
+        ESS_ : float
+            The Effective Sample Size of the weighted population
+        """
         # compute centred versions of the Effect Modifiers
         self.X_EM_0 = pd.DataFrame()
         for k, v in self.match.items():
@@ -114,7 +127,7 @@ class MAIC:
             The names of the variables to compare. These should be specified for the
             target dataset (i.e. they should be they keys in the `match` dictionary).
             Defaults to None, which means the keys in `match` will be used.
-        cols : int
+        ncols : int
             The number of columns to use in the grid of plots. If `len(vars)` is less
             than `ncols`, this will be used instead. Otherwise, defaults to 3.
         Returns
@@ -134,7 +147,7 @@ class MAIC:
         ncols = min(ncols, len(vars))
         nrows = len(vars) // ncols
         remainder = len(vars) % ncols
-        fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 5, nrows * 5))
+        fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
         axes = axes.flatten()
         for r in range(1, remainder + 1):
             axes[-r].axis("off")
@@ -182,6 +195,35 @@ class MAIC:
                     size=12,
                     weight="bold",
                 )
+        plt.close()
+
+        return fig
+
+    def plot_weights(
+        self, bins: Optional[Union[int, list[float]]] = None
+    ) -> plt.Figure:
+        """Plot a histogram of the scaled calculated weights.
+
+        Parameters
+        ----------
+        bins : Optional[Union[int, list[float]]]
+            If `bins` is an integer, it defines the number of equal-width bins to use.
+            If `bins` is a list of values, these define the bin edges. Defaults to None,
+            which uses matplotlib's default settings.
+
+        Returns
+        -------
+        plt.Figure
+            A histogram of the scaled calculated weights
+        """
+        if not self.weights_calculated:
+            raise e.NoWeightsException()
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.hist(self.weights_scaled_, bins=bins)
+        ax.set_ylabel("count")
+        ax.set_xlabel("weight (scaled)")
+        ax.grid(axis="y")
         plt.close()
 
         return fig
