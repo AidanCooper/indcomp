@@ -6,11 +6,14 @@ see Signorovich et al (2012) (https://doi.org/10.1016/j.jval.2012.05.004).
 This implementation mirrors NICE's guidance in DSU Technical Support Document 18.
 """
 
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
+
+import indcomp._exceptions as e
 
 
 class MAIC:
@@ -33,6 +36,8 @@ class MAIC:
          - The second string is the corresponding column name from `df_index`
          - A third string is only required for the 'std' statistic. This should be
          the `df_target` column name that corresponds to the 'mean' of the EM.
+    weights_calculated : bool
+        Boolean that tracks if weights have been successfully calculated
 
     Methods
     -------
@@ -50,6 +55,7 @@ class MAIC:
         self.df_index = df_index
         self.df_target = df_target
         self.match = match
+        self.weights_calculated = False
 
     def _objfn(self, params: Tuple[float], X: pd.DataFrame) -> float:
         """Function to be optimised during calculation of weights"""
@@ -75,18 +81,107 @@ class MAIC:
                     - self.df_target[v[2]].values[0] ** 2
                 )
 
-        # initialise the parameters for optimisation
-        x0 = tuple([0.0 for _ in self.X_EM_0.columns])
-        self.result_ = minimize(
+        # find optimal alpha1 parameters
+        x0 = tuple([0.0 for _ in self.X_EM_0.columns])  # initialise the parameters as 0
+        self.alpha1_result_ = minimize(
             self._objfn, x0, args=(self.X_EM_0), method="BFGS", jac=self._gradfn
         )
-        self.a1_ = self.result_.x
+        self.a1_ = self.alpha1_result_.x
 
-        # calculate (scaled weights)
+        # calculate (scaled) weights
         self.weights_ = np.exp(np.matmul(self.X_EM_0, self.a1_))
-        self.scaled_weights_ = (
+        self.weights_scaled_ = (
             self.weights_ / np.sum(self.weights_) * len(self.df_index)
         )
 
         # calculate Effective Sample Size (ESS)
         self.ESS_ = np.sum(self.weights_) ** 2 / np.sum(self.weights_ ** 2)
+
+        self.weights_calculated = True
+
+    def compare_populations(
+        self, weighted: bool = False, vars: Optional[list[str]] = None, ncols: int = 3
+    ) -> plt.Figure:
+        """
+        Plot the unweighted populations for the variables in `vars`.
+
+        Parameters
+        ----------
+        weighted : bool
+            Whether to compare the weighted or unweighted populations. Defaults to
+            False. To compare weighted, `calc_weights()` must be successfully run first.
+        vars : Optional[list[str]]
+            The names of the variables to compare. These should be specified for the
+            target dataset (i.e. they should be they keys in the `match` dictionary).
+            Defaults to None, which means the keys in `match` will be used.
+        cols : int
+            The number of columns to use in the grid of plots. If `len(vars)` is less
+            than `ncols`, this will be used instead. Otherwise, defaults to 3.
+        Returns
+        -------
+        plt.Figure
+            A grid of plots for each variable in `vars`, comparing the unweighted index
+            and target datasets.
+        """
+
+        if not vars:
+            vars = list(self.match.keys())
+
+        if weighted and not self.weights_calculated:
+            raise e.NoWeightsException()
+
+        # create grid
+        ncols = min(ncols, len(vars))
+        nrows = len(vars) // ncols
+        remainder = len(vars) % ncols
+        fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 5, nrows * 5))
+        axes = axes.flatten()
+        for r in range(1, remainder + 1):
+            axes[-r].axis("off")
+
+        # plot vars
+        for var, ax in zip(vars, axes):
+            if self.match[var][0] == "mean":
+                if weighted:
+                    val_ind = (
+                        self.df_index[self.match[var][1]] * self.weights_scaled_
+                    ).mean()
+                else:
+                    val_ind = self.df_index[self.match[var][1]].mean()
+            elif self.match[var][0] == "std":
+                if weighted:
+                    val_mean = (
+                        self.df_index[self.match[var][1]] * self.weights_scaled_
+                    ).mean()
+                    val_ind = np.sqrt(
+                        np.sum(
+                            self.weights_
+                            / np.sum(self.weights_)
+                            * (self.df_index[self.match[var][1]] - val_mean) ** 2
+                        )
+                    )
+                else:
+                    val_ind = self.df_index[self.match[var][1]].std()
+            val_tar = self.df_target[var].values[0]
+            ax.bar([0, 1], [val_tar, val_ind])
+            ax.grid(axis="y")
+            ax.set_xticks([0, 1])
+            ax.set_xticklabels(["target", "index"])
+            ax.set_title(var + " (weighted)" if weighted else var)
+
+            # annotate bars with values
+            voffset = min(val_tar, val_ind) * 0.05
+            for rect, label in zip(ax.patches, [val_tar, val_ind]):
+                ax.text(
+                    rect.get_x() + rect.get_width() / 2,
+                    rect.get_height() - voffset,
+                    f"{label:.1f}",
+                    ha="center",
+                    va="top",
+                    color="white",
+                    size=12,
+                    weight="bold",
+                )
+        plt.close()
+
+        return fig
