@@ -51,11 +51,31 @@ class MAIC:
         df_target: pd.DataFrame,
         match: Dict[str, Tuple[str, str]],
     ):
-        """Initialises an instance of `MAIC`"""
+        self._check_match(match, df_index.columns, df_target.columns)
         self.df_index = df_index
         self.df_target = df_target
         self.match = match
         self.weights_calculated = False
+
+    def _check_match(self, match_dict, ind_cols, tar_cols):
+        """Checks that `match_dict` is correctly configured"""
+        for k, v in match_dict.items():
+            if type(v) == str:
+                raise e.ConfigException(v)
+            if v[0] not in ["mean", "std"]:
+                raise e.StatisticException(v[0])
+            if v[0] == "mean":
+                if len(v) != 2:
+                    raise e.MeanConfigException(v)
+            if v[0] == "std":
+                if len(v) != 3:
+                    raise e.StdConfigException(v)
+                if v[2] not in tar_cols:
+                    raise e.ColumnNotFoundException(v[2], "target")
+            if k not in tar_cols:
+                raise e.ColumnNotFoundException(k, "target")
+            if v[1] not in ind_cols:
+                raise e.ColumnNotFoundException(v[1], "index")
 
     def _objfn(self, params: Tuple[float], X: pd.DataFrame) -> float:
         """Function to be optimised during calculation of weights"""
