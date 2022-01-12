@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 
-import indcomp._exceptions as e
+import indcomp.exceptions as e
 
 
 class MAIC:
@@ -49,7 +49,7 @@ class MAIC:
         self,
         df_index: pd.DataFrame,
         df_target: pd.DataFrame,
-        match: Dict[str, Tuple[str, str]],
+        match: Dict[str, Tuple[str]],
     ):
         self._check_match(match, df_index.columns, df_target.columns)
         self.df_index = df_index
@@ -57,10 +57,15 @@ class MAIC:
         self.match = match
         self.weights_calculated = False
 
-    def _check_match(self, match_dict, ind_cols, tar_cols):
+    def _check_match(
+        self,
+        match_dict: Dict[str, Tuple[str]],
+        ind_cols: list[str],
+        tar_cols: list[str],
+    ):
         """Checks that `match_dict` is correctly configured"""
         for k, v in match_dict.items():
-            if type(v) == str:
+            if type(v) == str:  # only one string provided in dictionary values
                 raise e.ConfigException(v)
             if v[0] not in ["mean", "std"]:
                 raise e.StatisticException(v[0])
@@ -168,6 +173,7 @@ class MAIC:
         nrows = len(vars) // ncols
         remainder = len(vars) % ncols
         fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
+        fig.patch.set_facecolor("white")
         axes = axes.flatten()
         for r in range(1, remainder + 1):
             axes[-r].axis("off")
@@ -183,14 +189,14 @@ class MAIC:
                     val_ind = self.df_index[self.match[var][1]].mean()
             elif self.match[var][0] == "std":
                 if weighted:
-                    val_mean = (
+                    ind_mean = (
                         self.df_index[self.match[var][1]] * self.weights_scaled_
                     ).mean()
                     val_ind = np.sqrt(
                         np.sum(
                             self.weights_
                             / np.sum(self.weights_)
-                            * (self.df_index[self.match[var][1]] - val_mean) ** 2
+                            * (self.df_index[self.match[var][1]] - ind_mean) ** 2
                         )
                     )
                 else:
@@ -240,6 +246,7 @@ class MAIC:
             raise e.NoWeightsException()
 
         fig, ax = plt.subplots(figsize=(8, 4))
+        fig.patch.set_facecolor("white")
         ax.hist(self.weights_scaled_, bins=bins)
         ax.set_ylabel("count")
         ax.set_xlabel("weight (scaled)")
