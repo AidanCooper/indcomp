@@ -23,7 +23,7 @@ pip install indcomp
 
 ---
 
-## Usage
+## Usage - MAIC
 
 ```python
 from indcomp import MAIC
@@ -32,17 +32,20 @@ from indcomp.datasets import load_NICE_DSU18
 # load simulated Individual Patient Data (IPD) for trial AB
 # load simulated Aggregated Data (AgD) for trial AC
 df_AB_IPD, df_AC_AgD = load_NICE_DSU18()
+print(f"Number of AB patients: {len(df_AB_IPD)}")
 print(df_AB_IPD.sample(5))
 ```
 ```console
+> Number of AB patients: 500
 >       ID  age  gender trt  y
-> 411  162   61  Female   B  0
-> 208  209   75    Male   A  1
-> 356  107   51  Female   B  0
-> 323   74   62  Female   B  0
-> 236  237   65    Male   A  1
+> 113  114   73    Male   A  1
+> 371  122   45  Female   B  1
+> 77    78   48    Male   A  1
+> 441  192   49    Male   B  0
+> 120  121   68    Male   A  1
 ```
 ```python
+# 300 AC patients
 print(df_AC_AgD.round(2))
 ```
 ```console
@@ -50,14 +53,17 @@ print(df_AC_AgD.round(2))
 > 0     50.27    3.12      68       0.23      125     0.83  150       21     0.14  150
 ```
 ```python
+# adjust df_AB_IPD['age'] to have same mean as df_AC_AgD['age.mean'] and
+# adjust df_AB_IPD['age'] to have same std as df_AC_AgD['age.sd']
 maic=MAIC(
     df_index=df_AB_IPD,
     df_target=df_AC_AgD,
     match={
-        "age.mean": ("mean", "age"),  # adjust to have same age mean
-        "age.sd": ("std", "age", "age.mean")  # adjust to have same age std
+        "age.mean": ("mean", "age"),
+        "age.sd": ("std", "age", "age.mean")
     }
 )
+# compare unweighted populations, before performing matching adjustment
 maic.compare_populations()
 ```
 <p align="center">
@@ -65,8 +71,9 @@ maic.compare_populations()
 </p>
 
 ```python
+# calculate and examine weights and Effective Sample Size
 maic.calc_weights()
-print(f"Effective Sample Size: {maic.ESS_:.2f}")
+print(f"Effective Sample Size: {maic.ESS_:.2f}")  # original sample size: 500 patients
 maic.plot_weights()
 ```
 ```console
@@ -77,6 +84,7 @@ maic.plot_weights()
 </p>
 
 ```python
+# compare weighted populations, after performing matching adjustment
 maic.compare_populations(weighted=True)
 ```
 <p align="center">
