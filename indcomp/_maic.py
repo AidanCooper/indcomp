@@ -32,7 +32,7 @@ class MAIC:
         Dictionary that specifies the Effect Modifiers (EMs) that are to be matched.
         Keys correspond to column names in 'df_target'. Values are tuples containing
         two or three strings:
-         - The first string is the statistic to use (options: {'mean', 'std')
+         - The first string is the statistic to use (options: {'mean', 'std'})
          - The second string is the corresponding column name from `df_index`
          - A third string is only required for the 'std' statistic. This should be
          the `df_target` column name that corresponds to the 'mean' of the EM.
