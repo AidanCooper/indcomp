@@ -17,7 +17,7 @@ import indcomp.exceptions as e
 
 
 class MAIC:
-    """A class for conducting MAIC analyses.
+    """A class for conducting Matching-Adjusted Indirect Comparison (MAIC) analyses.
 
     Attributes
     ----------
@@ -103,7 +103,7 @@ class MAIC:
             The calculated weights, rescaled such that they sum to the size of the
             population
         ESS_ : float
-            The Effective Sample Size of the weighted population
+            The Effective Sample Size (ESS) of the weighted population
         """
         # compute centred versions of the Effect Modifiers
         self.X_EM_0 = pd.DataFrame()
