@@ -1,7 +1,7 @@
 [logo]
 
 ---
-[badges]
+ [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **indcomp** is a package for performing indirect treatment comparisons.
 
