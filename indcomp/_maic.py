@@ -138,7 +138,10 @@ class MAIC:
         self.weights_calculated = True
 
     def compare_populations(
-        self, weighted: bool = False, vars: Optional[list[str]] = None, ncols: int = 3
+        self,
+        weighted: bool = False,
+        variables: Optional[list[str]] = None,
+        ncols: int = 3,
     ) -> plt.Figure:
         """
         Plot the unweighted populations for the variables in `vars`.
@@ -148,7 +151,7 @@ class MAIC:
         weighted : bool
             Whether to compare the weighted or unweighted populations. Defaults to
             False. To compare weighted, `calc_weights()` must be successfully run first.
-        vars : Optional[list[str]]
+        variables : Optional[list[str]]
             The names of the variables to compare. These should be specified for the
             target dataset (i.e. they should be they keys in the `match` dictionary).
             Defaults to None, which means the keys in `match` will be used.
@@ -162,16 +165,16 @@ class MAIC:
             and target datasets.
         """
 
-        if not vars:
-            vars = list(self.match.keys())
+        if not variables:
+            variables = list(self.match.keys())
 
         if weighted and not self.weights_calculated:
             raise e.NoWeightsException()
 
         # create grid
-        ncols = min(ncols, len(vars))
-        nrows = len(vars) // ncols
-        remainder = len(vars) % ncols
+        ncols = min(ncols, len(variables))
+        nrows = len(variables) // ncols
+        remainder = len(variables) % ncols
         fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
         fig.patch.set_facecolor("white")
         axes = axes.flatten()
@@ -179,7 +182,7 @@ class MAIC:
             axes[-r].axis("off")
 
         # plot vars
-        for var, ax in zip(vars, axes):
+        for var, ax in zip(variables, axes):
             if self.match[var][0] == "mean":
                 if weighted:
                     val_ind = (
