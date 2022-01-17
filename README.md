@@ -1,4 +1,6 @@
-[logo]
+<p align="center">
+  <img src="images/indcomp.svg" />
+</p>
 
 ---
  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
