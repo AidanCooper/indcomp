@@ -14,6 +14,7 @@ import pandas as pd
 from scipy.optimize import minimize
 
 import indcomp.exceptions as e
+from indcomp._utils import get_colour_palette
 
 
 class MAIC:
@@ -56,6 +57,7 @@ class MAIC:
         self.df_target = df_target
         self.match = match
         self.weights_calculated = False
+        self._colours = get_colour_palette()
 
     def _check_match(
         self,
@@ -205,7 +207,9 @@ class MAIC:
                 else:
                     val_ind = self.df_index[self.match[var][1]].std()
             val_tar = self.df_target[var].values[0]
-            ax.bar([0, 1], [val_tar, val_ind])
+            bars = ax.bar([0, 1], [val_tar, val_ind])
+            bars[0].set_color(self._colours[0])  # colour for target trial
+            bars[1].set_color(self._colours[1])  # colours for index trial
             ax.grid(axis="y")
             ax.set_xticks([0, 1])
             ax.set_xticklabels(["target", "index"])
@@ -250,7 +254,7 @@ class MAIC:
 
         fig, ax = plt.subplots(figsize=(8, 4))
         fig.patch.set_facecolor("white")
-        ax.hist(self.weights_scaled_, bins=bins)
+        ax.hist(self.weights_scaled_, bins=bins, color=self._colours[0])
         ax.set_ylabel("count")
         ax.set_xlabel("weight (scaled)")
         ax.grid(axis="y")
