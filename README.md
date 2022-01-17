@@ -4,10 +4,11 @@
 
 ---
  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+ [![PyPI version](https://badge.fury.io/py/indcomp.svg)](https://badge.fury.io/py/indcomp)
 
 **indcomp** is a package for performing indirect treatment comparisons.
 
-inccomp currently supports the Matching-Adjusted Indirect Comparison (MAIC) approach, implemented in line with [NICE's guidance](http://nicedsu.org.uk/technical-support-documents/population-adjusted-indirect-comparisons-maic-and-stc/).
+inccomp currently supports the Matching-Adjusted Indirect Comparison (MAIC) approach, implemented as per [NICE's guidance](http://nicedsu.org.uk/technical-support-documents/population-adjusted-indirect-comparisons-maic-and-stc/).
 
 
 ## Install
