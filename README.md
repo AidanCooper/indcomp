@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/indcomp.svg" />
+  <img width="400" src="images/indcomp.png" />
 </p>
 
 ---
