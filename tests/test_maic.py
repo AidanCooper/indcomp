@@ -95,7 +95,7 @@ def test_maic_checks_pass(data_NICE_DSU18):
 @test_steps(
     "compare_unweighted",
     "weights_exception1",
-    "weights_excpetion2",
+    "weights_exception2",
     "calculate_weights",
     "plot_weights",
     "compare_weighted",
