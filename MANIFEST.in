@@ -1,1 +1,4 @@
 include data/*
+include images/*
+include figures/*
+include tests/*
