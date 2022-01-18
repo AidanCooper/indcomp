@@ -5,6 +5,8 @@
 ---
  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
  [![PyPI version](https://badge.fury.io/py/indcomp.svg)](https://badge.fury.io/py/indcomp)
+ ![Coverage](images/coverage.svg)
+ [![Code style: black](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
 
 **indcomp** is a package for performing indirect treatment comparisons.
 
