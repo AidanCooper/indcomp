@@ -6,7 +6,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="indcomp",
-    version="0.1.0",
+    version="0.1.1",
     description="Perform indirect treatment comparison (ITC) analyses",
     long_description=README,
     long_description_content_type="text/markdown",
