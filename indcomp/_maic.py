@@ -174,12 +174,18 @@ class MAIC:
             raise e.NoWeightsException()
 
         # create grid
-        ncols = min(ncols, len(variables))
-        nrows = len(variables) // ncols
-        remainder = len(variables) % ncols
+        if len(variables) == 1:
+            ncols, nrows, remainder = 1, 1, 0
+        else:
+            ncols = min(ncols, len(variables))
+            nrows = len(variables) // ncols
+            remainder = len(variables) % ncols
         fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
         fig.patch.set_facecolor("white")
-        axes = axes.flatten()
+        if len(variables) == 1:
+            axes = [axes]
+        else:
+            axes = axes.flatten()
         for r in range(1, remainder + 1):
             axes[-r].axis("off")
 

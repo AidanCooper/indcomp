@@ -19,14 +19,19 @@ def data_NICE_DSU18():
     return (df_ind, df_tar)
 
 
-@pytest.fixture
-def correct_config_maic(data_NICE_DSU18):
+@pytest.fixture(
+    params=[
+        {"age.mean": ("mean", "age")},
+        {"age.mean": ("mean", "age"), "age.sd": ("std", "age", "age.mean")},
+    ]
+)
+def correct_config_maic(request, data_NICE_DSU18):
     """Return a correctly configued MAIC instance"""
     df_ind, df_tar = data_NICE_DSU18
     return MAIC(
         df_ind,
         df_tar,
-        {"age.mean": ("mean", "age"), "age.sd": ("std", "age", "age.mean")},
+        request.param,
     )
 
 
@@ -123,7 +128,9 @@ def test_maic_methods(correct_config_maic):
     # calculate_weights
     with optional_step("calculate_weights") as calculate_weights:
         maic.calc_weights()
-        assert np.isclose(maic.ESS_, 178.56, atol=0.01)
+        assert np.isclose(maic.ESS_, 178.56, atol=0.01) or np.isclose(
+            maic.ESS_, 188.89, atol=0.01
+        )
     yield calculate_weights
 
     # plot_weights
