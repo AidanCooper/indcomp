@@ -1,8 +1,6 @@
 """Test suite for indcomp
 """
 
-
-from click import option
 import indcomp.exceptions as e
 import numpy as np
 import pytest
@@ -110,7 +108,7 @@ def test_maic_methods(correct_config_maic):
     # compare_unweighted
     maic = correct_config_maic
     fig = maic.compare_populations()
-    assert type(fig) == Figure
+    assert isinstance(fig, Figure)
     yield
 
     # weights_exception1
@@ -136,11 +134,11 @@ def test_maic_methods(correct_config_maic):
     # plot_weights
     with optional_step("plot_weights", depends_on=calculate_weights) as plot_weights:
         fig = maic.plot_weights()
-        assert type(fig) == Figure
+        assert isinstance(fig, Figure)
     yield plot_weights
 
     # compare_weighted
     with optional_step("compare_weighted", depends_on=plot_weights) as compare_weighted:
         fig = maic.compare_populations(weighted=True)
-        assert type(fig) == Figure
+        assert isinstance(fig, Figure)
     yield compare_weighted
