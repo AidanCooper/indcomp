@@ -1,11 +1,11 @@
 <p align="center">
-  <img width="400" src="images/indcomp.png" />
+  <img width="400" src="./images/indcomp.png" />
 </p>
 
 ---
  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
  [![PyPI version](https://badge.fury.io/py/indcomp.svg)](https://badge.fury.io/py/indcomp)
- ![Coverage](images/coverage.svg)
+ ![Coverage](./images/coverage.svg)
  [![Code style: black](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
 
 **indcomp** is a package for performing indirect treatment comparisons.
@@ -72,7 +72,7 @@ maic=MAIC(
 maic.compare_populations()
 ```
 <p align="center">
-  <img src="figures/NICE_DSU18_populations_unweighted.png" />
+  <img src="./figures/NICE_DSU18_populations_unweighted.png" />
 </p>
 
 ```python
@@ -85,7 +85,7 @@ maic.plot_weights()
 > Effective Sample Size: 178.56
 ```
 <p align="center">
-  <img src="figures/NICE_DSU18_weights.png" />
+  <img src="./figures/NICE_DSU18_weights.png" />
 </p>
 
 ```python
@@ -93,5 +93,5 @@ maic.plot_weights()
 maic.compare_populations(weighted=True)
 ```
 <p align="center">
-  <img src="figures/NICE_DSU18_populations_weighted.png" />
+  <img src="./figures/NICE_DSU18_populations_weighted.png" />
 </p>
