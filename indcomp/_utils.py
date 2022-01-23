@@ -1,4 +1,4 @@
-"""Utility functions
+"""The `indcomp._utils` module contains utility functions.
 """
 
 from typing import List

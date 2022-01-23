@@ -1,4 +1,4 @@
-"""Test suite for indcomp
+"""Test suite for the `indcomp._maic` module.
 """
 
 import indcomp.exceptions as e

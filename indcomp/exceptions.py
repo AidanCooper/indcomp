@@ -1,3 +1,7 @@
+"""The `indcomp.exceptions` module includes all custom exceptions.
+"""
+
+
 class NoWeightsException(Exception):
     """Raised if a class method that requires weights is invoked, before weights have
     been calculated

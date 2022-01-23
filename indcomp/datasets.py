@@ -1,3 +1,6 @@
+"""The `indcomp.datasets` module contains tools for loading example datasets.
+"""
+
 import pathlib
 from typing import Tuple
 
