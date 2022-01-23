@@ -12,6 +12,7 @@
 
 indcomp currently supports the Matching-Adjusted Indirect Comparison (MAIC) approach, implemented as per [NICE's guidance](http://nicedsu.org.uk/technical-support-documents/population-adjusted-indirect-comparisons-maic-and-stc/).
 
+View the [indcomp documentation](https://aidancooper.github.io/indcomp/).
 
 ## Install
 
