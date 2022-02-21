@@ -10,7 +10,7 @@
 
 **indcomp** is a package for performing indirect treatment comparisons (ITCs).
 
-indcomp currently supports the Matching-Adjusted Indirect Comparison (MAIC) approach, implemented as per [NICE's guidance](http://nicedsu.org.uk/technical-support-documents/population-adjusted-indirect-comparisons-maic-and-stc/).
+indcomp currently supports the Matching-Adjusted Indirect Comparison (MAIC) approach, implemented as per [NICE's guidance](https://research-information.bris.ac.uk/en/publications/nice-dsu-technical-support-document-18-methods-for-population-adj).
 
 View the [indcomp documentation](https://aidancooper.github.io/indcomp/).
 
