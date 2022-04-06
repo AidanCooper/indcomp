@@ -31,7 +31,7 @@ pip install indcomp
 
 ## Usage - Matching-Adjusted Indirect Comparison (MAIC)
 
-For this example, we use simulated data as per [NICE's worked example](http://nicedsu.org.uk/wp-content/uploads/2017/05/TSD18-Appendix-D-Worked-example-of-MAIC-and-STC.pdf).
+For this example, we use simulated data as per [NICE's worked example (DSU Technical Support Document - Appendix D)](https://research-information.bris.ac.uk/en/publications/nice-dsu-technical-support-document-18-methods-for-population-adj).
 
 The objective is to weight individual patient-level data (IPD) for a hypothetical randomised control trial (RCT) comparing treatments _A_ and _B_, to match on specified characteristics described in aggregated data for a hypothetical RCT comparing treatments _A_ and _C_. In this example, we weight the _AB_ trial such that the age matches the mean and standard deviation of the _AC_ trial.
 
