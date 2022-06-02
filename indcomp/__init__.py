@@ -11,6 +11,6 @@ Coming soon:
 from pdoc import __pdoc__
 
 __pdoc__["_maic"] = True
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from ._maic import MAIC
