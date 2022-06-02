@@ -14,6 +14,13 @@ from pytest_steps import optional_step, test_steps
 def data_NICE_DSU18():
     """Retrieve simulated NICE DSU18 data"""
     df_ind, df_tar = load_NICE_DSU18()
+    # extend data for testing
+    df_tar["age.min"] = 46
+    df_tar["age.max"] = 70
+    df_tar["var.min"] = 10
+    df_tar["var.max"] = 20
+    np.random.seed(0)
+    df_ind["var"] = np.random.randint(5, 25, len(df_ind))
     return (df_ind, df_tar)
 
 
@@ -21,16 +28,19 @@ def data_NICE_DSU18():
     params=[
         {"age.mean": ("mean", "age")},
         {"age.mean": ("mean", "age"), "age.sd": ("std", "age", "age.mean")},
+        {"age.min": ("min", "age"), "age.max": ("max", "age")},
+        {
+            "age.mean": ("mean", "age"),
+            "age.sd": ("std", "age", "age.mean"),
+            "age.min": ("min", "age"),
+            "age.max": ("max", "age"),
+        },
     ]
 )
 def correct_config_maic(request, data_NICE_DSU18):
     """Return a correctly configued MAIC instance"""
     df_ind, df_tar = data_NICE_DSU18
-    return MAIC(
-        df_ind,
-        df_tar,
-        request.param,
-    )
+    return MAIC(df_ind, df_tar, request.param)
 
 
 def test_maic_checks_one_string(data_NICE_DSU18):
@@ -56,7 +66,29 @@ def test_maic_checks_wrong_mean(data_NICE_DSU18, values):
     """Supply incorrect number of value strings for mean statistic"""
     df_ind, df_tar = data_NICE_DSU18
     match = {"age.mean": values}
-    with pytest.raises(e.MeanConfigException):
+    with pytest.raises(e.MeanMinMaxConfigException):
+        MAIC(df_ind, df_tar, match)
+
+
+@pytest.mark.parametrize(
+    "values", [("min", "age", "second"), ("min", "age", "second", "third")]
+)
+def test_maic_checks_wrong_min(data_NICE_DSU18, values):
+    """Supply incorrect number of value strings for mean statistic"""
+    df_ind, df_tar = data_NICE_DSU18
+    match = {"age.min": values}
+    with pytest.raises(e.MeanMinMaxConfigException):
+        MAIC(df_ind, df_tar, match)
+
+
+@pytest.mark.parametrize(
+    "values", [("max", "age", "second"), ("max", "age", "second", "third")]
+)
+def test_maic_checks_wrong_max(data_NICE_DSU18, values):
+    """Supply incorrect number of value strings for mean statistic"""
+    df_ind, df_tar = data_NICE_DSU18
+    match = {"age.max": values}
+    with pytest.raises(e.MeanMinMaxConfigException):
         MAIC(df_ind, df_tar, match)
 
 
@@ -126,8 +158,12 @@ def test_maic_methods(correct_config_maic):
     # calculate_weights
     with optional_step("calculate_weights") as calculate_weights:
         maic.calc_weights()
-        assert np.isclose(maic.ESS_, 178.56, atol=0.01) or np.isclose(
-            maic.ESS_, 188.89, atol=0.01
+        assert (
+            np.isclose(maic.ESS_, 188.90, atol=0.01)
+            or np.isclose(maic.ESS_, 178.56, atol=0.01)
+        ) or (
+            np.isclose(maic.ESS_, 401.00, atol=0.01)
+            or np.isclose(maic.ESS_, 165.87, atol=0.01)
         )
     yield calculate_weights
 
