@@ -33,7 +33,7 @@ class MAIC:
         Dictionary that specifies the Effect Modifiers (EMs) that are to be matched.
         Keys correspond to column names in 'df_target'. Values are tuples containing
         two or three strings:
-         - The first string is the statistic to use (options: {'mean', 'std'})
+         - The first string is the statistic to use (options: {'mean', 'std', 'min', 'max'})
          - The second string is the corresponding column name from `df_index`
          - A third string is only required for the 'std' statistic. This should be
          the `df_target` column name that corresponds to the 'mean' of the EM.
@@ -69,11 +69,11 @@ class MAIC:
         for k, v in match_dict.items():
             if type(v) == str:  # only one string provided in dictionary values
                 raise e.ConfigException(v)
-            if v[0] not in ["mean", "std"]:
+            if v[0] not in ["mean", "std", "min", "max"]:
                 raise e.StatisticException(v[0])
-            if v[0] == "mean":
+            if v[0] in ["mean", "min", "max"]:
                 if len(v) != 2:
-                    raise e.MeanConfigException(v)
+                    raise e.MeanMinMaxConfigException(v)
             if v[0] == "std":
                 if len(v) != 3:
                     raise e.StdConfigException(v)
@@ -107,10 +107,17 @@ class MAIC:
         ESS_ : float
             The Effective Sample Size (ESS) of the weighted population
         """
+        self.weights_ = np.ones(len(self.df_index))  # placeholder weights
+
+        # identify zero weights based on min/max matching
         # compute centred versions of the Effect Modifiers
         self.X_EM_0 = pd.DataFrame()
         for k, v in self.match.items():
-            if v[0] == "mean":
+            if v[0] == "min":
+                self.weights_[self.df_index[v[1]] < self.df_target[k].min()] = 0
+            elif v[0] == "max":
+                self.weights_[self.df_index[v[1]] > self.df_target[k].max()] = 0
+            elif v[0] == "mean":
                 self.X_EM_0[v[1] + "_mean"] = (
                     self.df_index[v[1]] - self.df_target[k].values[0]
                 )
@@ -122,21 +129,30 @@ class MAIC:
                 )
 
         # find optimal alpha1 parameters
-        x0 = tuple([0.0 for _ in self.X_EM_0.columns])  # initialise the parameters as 0
-        self.alpha1_result_ = minimize(
-            self._objfn, x0, args=(self.X_EM_0), method="BFGS", jac=self._gradfn
-        )
-        self.a1_ = self.alpha1_result_.x
+        if len(self.X_EM_0.columns) > 0:  # if matching on mean or sd
+            x0 = tuple(
+                [0.0 for _ in self.X_EM_0.columns]
+            )  # initialise the parameters as 0
+            self.alpha1_result_ = minimize(
+                self._objfn,
+                x0,
+                args=(self.X_EM_0[self.weights_ > 0]),
+                method="BFGS",
+                jac=self._gradfn,
+            )
+            self.a1_ = self.alpha1_result_.x
+
+            # calculate weights
+            self.weights_[self.weights_ > 0] = np.exp(
+                np.matmul(self.X_EM_0[self.weights_ > 0], self.a1_)
+            )
 
         # calculate (scaled) weights
-        self.weights_ = np.exp(np.matmul(self.X_EM_0, self.a1_))
         self.weights_scaled_ = (
             self.weights_ / np.sum(self.weights_) * len(self.df_index)
         )
-
         # calculate Effective Sample Size (ESS)
         self.ESS_ = np.sum(self.weights_) ** 2 / np.sum(self.weights_ ** 2)
-
         self.weights_calculated = True
 
     def compare_populations(
@@ -178,8 +194,8 @@ class MAIC:
             ncols, nrows, remainder = 1, 1, 0
         else:
             ncols = min(ncols, len(variables))
-            nrows = len(variables) // ncols
-            remainder = len(variables) % ncols
+            nrows = (len(variables) - 1) // ncols + 1
+            remainder = nrows * ncols - len(variables)
         fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
         fig.patch.set_facecolor("white")
         if len(variables) == 1:
@@ -191,7 +207,21 @@ class MAIC:
 
         # plot vars
         for var, ax in zip(variables, axes):
-            if self.match[var][0] == "mean":
+            if self.match[var][0] == "min":
+                if weighted:
+                    val_ind = (
+                        self.df_index[self.match[var][1]][self.weights_ > 0]
+                    ).min()
+                else:
+                    val_ind = self.df_index[self.match[var][1]].min()
+            elif self.match[var][0] == "max":
+                if weighted:
+                    val_ind = (
+                        self.df_index[self.match[var][1]][self.weights_ > 0]
+                    ).max()
+                else:
+                    val_ind = self.df_index[self.match[var][1]].max()
+            elif self.match[var][0] == "mean":
                 if weighted:
                     val_ind = (
                         self.df_index[self.match[var][1]] * self.weights_scaled_
