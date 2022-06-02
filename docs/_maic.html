@@ -65,7 +65,7 @@ class MAIC:
         Dictionary that specifies the Effect Modifiers (EMs) that are to be matched.
         Keys correspond to column names in &#39;df_target&#39;. Values are tuples containing
         two or three strings:
-         - The first string is the statistic to use (options: {&#39;mean&#39;, &#39;std&#39;})
+         - The first string is the statistic to use (options: {&#39;mean&#39;, &#39;std&#39;, &#39;min&#39;, &#39;max&#39;})
          - The second string is the corresponding column name from `df_index`
          - A third string is only required for the &#39;std&#39; statistic. This should be
          the `df_target` column name that corresponds to the &#39;mean&#39; of the EM.
@@ -101,11 +101,11 @@ class MAIC:
         for k, v in match_dict.items():
             if type(v) == str:  # only one string provided in dictionary values
                 raise e.ConfigException(v)
-            if v[0] not in [&#34;mean&#34;, &#34;std&#34;]:
+            if v[0] not in [&#34;mean&#34;, &#34;std&#34;, &#34;min&#34;, &#34;max&#34;]:
                 raise e.StatisticException(v[0])
-            if v[0] == &#34;mean&#34;:
+            if v[0] in [&#34;mean&#34;, &#34;min&#34;, &#34;max&#34;]:
                 if len(v) != 2:
-                    raise e.MeanConfigException(v)
+                    raise e.MeanMinMaxConfigException(v)
             if v[0] == &#34;std&#34;:
                 if len(v) != 3:
                     raise e.StdConfigException(v)
@@ -139,10 +139,17 @@ class MAIC:
         ESS_ : float
             The Effective Sample Size (ESS) of the weighted population
         &#34;&#34;&#34;
+        self.weights_ = np.ones(len(self.df_index))  # placeholder weights
+
+        # identify zero weights based on min/max matching
         # compute centred versions of the Effect Modifiers
         self.X_EM_0 = pd.DataFrame()
         for k, v in self.match.items():
-            if v[0] == &#34;mean&#34;:
+            if v[0] == &#34;min&#34;:
+                self.weights_[self.df_index[v[1]] &lt; self.df_target[k].min()] = 0
+            elif v[0] == &#34;max&#34;:
+                self.weights_[self.df_index[v[1]] &gt; self.df_target[k].max()] = 0
+            elif v[0] == &#34;mean&#34;:
                 self.X_EM_0[v[1] + &#34;_mean&#34;] = (
                     self.df_index[v[1]] - self.df_target[k].values[0]
                 )
@@ -154,21 +161,30 @@ class MAIC:
                 )
 
         # find optimal alpha1 parameters
-        x0 = tuple([0.0 for _ in self.X_EM_0.columns])  # initialise the parameters as 0
-        self.alpha1_result_ = minimize(
-            self._objfn, x0, args=(self.X_EM_0), method=&#34;BFGS&#34;, jac=self._gradfn
-        )
-        self.a1_ = self.alpha1_result_.x
+        if len(self.X_EM_0.columns) &gt; 0:  # if matching on mean or sd
+            x0 = tuple(
+                [0.0 for _ in self.X_EM_0.columns]
+            )  # initialise the parameters as 0
+            self.alpha1_result_ = minimize(
+                self._objfn,
+                x0,
+                args=(self.X_EM_0[self.weights_ &gt; 0]),
+                method=&#34;BFGS&#34;,
+                jac=self._gradfn,
+            )
+            self.a1_ = self.alpha1_result_.x
+
+            # calculate weights
+            self.weights_[self.weights_ &gt; 0] = np.exp(
+                np.matmul(self.X_EM_0[self.weights_ &gt; 0], self.a1_)
+            )
 
         # calculate (scaled) weights
-        self.weights_ = np.exp(np.matmul(self.X_EM_0, self.a1_))
         self.weights_scaled_ = (
             self.weights_ / np.sum(self.weights_) * len(self.df_index)
         )
-
         # calculate Effective Sample Size (ESS)
         self.ESS_ = np.sum(self.weights_) ** 2 / np.sum(self.weights_ ** 2)
-
         self.weights_calculated = True
 
     def compare_populations(
@@ -210,8 +226,8 @@ class MAIC:
             ncols, nrows, remainder = 1, 1, 0
         else:
             ncols = min(ncols, len(variables))
-            nrows = len(variables) // ncols
-            remainder = len(variables) % ncols
+            nrows = (len(variables) - 1) // ncols + 1
+            remainder = nrows * ncols - len(variables)
         fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
         fig.patch.set_facecolor(&#34;white&#34;)
         if len(variables) == 1:
@@ -223,7 +239,21 @@ class MAIC:
 
         # plot vars
         for var, ax in zip(variables, axes):
-            if self.match[var][0] == &#34;mean&#34;:
+            if self.match[var][0] == &#34;min&#34;:
+                if weighted:
+                    val_ind = (
+                        self.df_index[self.match[var][1]][self.weights_ &gt; 0]
+                    ).min()
+                else:
+                    val_ind = self.df_index[self.match[var][1]].min()
+            elif self.match[var][0] == &#34;max&#34;:
+                if weighted:
+                    val_ind = (
+                        self.df_index[self.match[var][1]][self.weights_ &gt; 0]
+                    ).max()
+                else:
+                    val_ind = self.df_index[self.match[var][1]].max()
+            elif self.match[var][0] == &#34;mean&#34;:
                 if weighted:
                     val_ind = (
                         self.df_index[self.match[var][1]] * self.weights_scaled_
@@ -329,7 +359,7 @@ closely as possible, as specified in <code>match</code> dictionary.</dd>
 <dd>Dictionary that specifies the Effect Modifiers (EMs) that are to be matched.
 Keys correspond to column names in 'df_target'. Values are tuples containing
 two or three strings:
-- The first string is the statistic to use (options: {'mean', 'std'})
+- The first string is the statistic to use (options: {'mean', 'std', 'min', 'max'})
 - The second string is the corresponding column name from <code>df_index</code>
 - A third string is only required for the 'std' statistic. This should be
 the <code>df_target</code> column name that corresponds to the 'mean' of the EM.</dd>
@@ -359,7 +389,7 @@ Calculate weights using the method of moments approach</p></div>
         Dictionary that specifies the Effect Modifiers (EMs) that are to be matched.
         Keys correspond to column names in &#39;df_target&#39;. Values are tuples containing
         two or three strings:
-         - The first string is the statistic to use (options: {&#39;mean&#39;, &#39;std&#39;})
+         - The first string is the statistic to use (options: {&#39;mean&#39;, &#39;std&#39;, &#39;min&#39;, &#39;max&#39;})
          - The second string is the corresponding column name from `df_index`
          - A third string is only required for the &#39;std&#39; statistic. This should be
          the `df_target` column name that corresponds to the &#39;mean&#39; of the EM.
@@ -395,11 +425,11 @@ Calculate weights using the method of moments approach</p></div>
         for k, v in match_dict.items():
             if type(v) == str:  # only one string provided in dictionary values
                 raise e.ConfigException(v)
-            if v[0] not in [&#34;mean&#34;, &#34;std&#34;]:
+            if v[0] not in [&#34;mean&#34;, &#34;std&#34;, &#34;min&#34;, &#34;max&#34;]:
                 raise e.StatisticException(v[0])
-            if v[0] == &#34;mean&#34;:
+            if v[0] in [&#34;mean&#34;, &#34;min&#34;, &#34;max&#34;]:
                 if len(v) != 2:
-                    raise e.MeanConfigException(v)
+                    raise e.MeanMinMaxConfigException(v)
             if v[0] == &#34;std&#34;:
                 if len(v) != 3:
                     raise e.StdConfigException(v)
@@ -433,10 +463,17 @@ Calculate weights using the method of moments approach</p></div>
         ESS_ : float
             The Effective Sample Size (ESS) of the weighted population
         &#34;&#34;&#34;
+        self.weights_ = np.ones(len(self.df_index))  # placeholder weights
+
+        # identify zero weights based on min/max matching
         # compute centred versions of the Effect Modifiers
         self.X_EM_0 = pd.DataFrame()
         for k, v in self.match.items():
-            if v[0] == &#34;mean&#34;:
+            if v[0] == &#34;min&#34;:
+                self.weights_[self.df_index[v[1]] &lt; self.df_target[k].min()] = 0
+            elif v[0] == &#34;max&#34;:
+                self.weights_[self.df_index[v[1]] &gt; self.df_target[k].max()] = 0
+            elif v[0] == &#34;mean&#34;:
                 self.X_EM_0[v[1] + &#34;_mean&#34;] = (
                     self.df_index[v[1]] - self.df_target[k].values[0]
                 )
@@ -448,21 +485,30 @@ Calculate weights using the method of moments approach</p></div>
                 )
 
         # find optimal alpha1 parameters
-        x0 = tuple([0.0 for _ in self.X_EM_0.columns])  # initialise the parameters as 0
-        self.alpha1_result_ = minimize(
-            self._objfn, x0, args=(self.X_EM_0), method=&#34;BFGS&#34;, jac=self._gradfn
-        )
-        self.a1_ = self.alpha1_result_.x
+        if len(self.X_EM_0.columns) &gt; 0:  # if matching on mean or sd
+            x0 = tuple(
+                [0.0 for _ in self.X_EM_0.columns]
+            )  # initialise the parameters as 0
+            self.alpha1_result_ = minimize(
+                self._objfn,
+                x0,
+                args=(self.X_EM_0[self.weights_ &gt; 0]),
+                method=&#34;BFGS&#34;,
+                jac=self._gradfn,
+            )
+            self.a1_ = self.alpha1_result_.x
+
+            # calculate weights
+            self.weights_[self.weights_ &gt; 0] = np.exp(
+                np.matmul(self.X_EM_0[self.weights_ &gt; 0], self.a1_)
+            )
 
         # calculate (scaled) weights
-        self.weights_ = np.exp(np.matmul(self.X_EM_0, self.a1_))
         self.weights_scaled_ = (
             self.weights_ / np.sum(self.weights_) * len(self.df_index)
         )
-
         # calculate Effective Sample Size (ESS)
         self.ESS_ = np.sum(self.weights_) ** 2 / np.sum(self.weights_ ** 2)
-
         self.weights_calculated = True
 
     def compare_populations(
@@ -504,8 +550,8 @@ Calculate weights using the method of moments approach</p></div>
             ncols, nrows, remainder = 1, 1, 0
         else:
             ncols = min(ncols, len(variables))
-            nrows = len(variables) // ncols
-            remainder = len(variables) % ncols
+            nrows = (len(variables) - 1) // ncols + 1
+            remainder = nrows * ncols - len(variables)
         fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
         fig.patch.set_facecolor(&#34;white&#34;)
         if len(variables) == 1:
@@ -517,7 +563,21 @@ Calculate weights using the method of moments approach</p></div>
 
         # plot vars
         for var, ax in zip(variables, axes):
-            if self.match[var][0] == &#34;mean&#34;:
+            if self.match[var][0] == &#34;min&#34;:
+                if weighted:
+                    val_ind = (
+                        self.df_index[self.match[var][1]][self.weights_ &gt; 0]
+                    ).min()
+                else:
+                    val_ind = self.df_index[self.match[var][1]].min()
+            elif self.match[var][0] == &#34;max&#34;:
+                if weighted:
+                    val_ind = (
+                        self.df_index[self.match[var][1]][self.weights_ &gt; 0]
+                    ).max()
+                else:
+                    val_ind = self.df_index[self.match[var][1]].max()
+            elif self.match[var][0] == &#34;mean&#34;:
                 if weighted:
                     val_ind = (
                         self.df_index[self.match[var][1]] * self.weights_scaled_
@@ -632,10 +692,17 @@ population</dd>
     ESS_ : float
         The Effective Sample Size (ESS) of the weighted population
     &#34;&#34;&#34;
+    self.weights_ = np.ones(len(self.df_index))  # placeholder weights
+
+    # identify zero weights based on min/max matching
     # compute centred versions of the Effect Modifiers
     self.X_EM_0 = pd.DataFrame()
     for k, v in self.match.items():
-        if v[0] == &#34;mean&#34;:
+        if v[0] == &#34;min&#34;:
+            self.weights_[self.df_index[v[1]] &lt; self.df_target[k].min()] = 0
+        elif v[0] == &#34;max&#34;:
+            self.weights_[self.df_index[v[1]] &gt; self.df_target[k].max()] = 0
+        elif v[0] == &#34;mean&#34;:
             self.X_EM_0[v[1] + &#34;_mean&#34;] = (
                 self.df_index[v[1]] - self.df_target[k].values[0]
             )
@@ -647,21 +714,30 @@ population</dd>
             )
 
     # find optimal alpha1 parameters
-    x0 = tuple([0.0 for _ in self.X_EM_0.columns])  # initialise the parameters as 0
-    self.alpha1_result_ = minimize(
-        self._objfn, x0, args=(self.X_EM_0), method=&#34;BFGS&#34;, jac=self._gradfn
-    )
-    self.a1_ = self.alpha1_result_.x
+    if len(self.X_EM_0.columns) &gt; 0:  # if matching on mean or sd
+        x0 = tuple(
+            [0.0 for _ in self.X_EM_0.columns]
+        )  # initialise the parameters as 0
+        self.alpha1_result_ = minimize(
+            self._objfn,
+            x0,
+            args=(self.X_EM_0[self.weights_ &gt; 0]),
+            method=&#34;BFGS&#34;,
+            jac=self._gradfn,
+        )
+        self.a1_ = self.alpha1_result_.x
+
+        # calculate weights
+        self.weights_[self.weights_ &gt; 0] = np.exp(
+            np.matmul(self.X_EM_0[self.weights_ &gt; 0], self.a1_)
+        )
 
     # calculate (scaled) weights
-    self.weights_ = np.exp(np.matmul(self.X_EM_0, self.a1_))
     self.weights_scaled_ = (
         self.weights_ / np.sum(self.weights_) * len(self.df_index)
     )
-
     # calculate Effective Sample Size (ESS)
     self.ESS_ = np.sum(self.weights_) ** 2 / np.sum(self.weights_ ** 2)
-
     self.weights_calculated = True</code></pre>
 </details>
 </dd>
@@ -732,8 +808,8 @@ and target datasets.</dd>
         ncols, nrows, remainder = 1, 1, 0
     else:
         ncols = min(ncols, len(variables))
-        nrows = len(variables) // ncols
-        remainder = len(variables) % ncols
+        nrows = (len(variables) - 1) // ncols + 1
+        remainder = nrows * ncols - len(variables)
     fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
     fig.patch.set_facecolor(&#34;white&#34;)
     if len(variables) == 1:
@@ -745,7 +821,21 @@ and target datasets.</dd>
 
     # plot vars
     for var, ax in zip(variables, axes):
-        if self.match[var][0] == &#34;mean&#34;:
+        if self.match[var][0] == &#34;min&#34;:
+            if weighted:
+                val_ind = (
+                    self.df_index[self.match[var][1]][self.weights_ &gt; 0]
+                ).min()
+            else:
+                val_ind = self.df_index[self.match[var][1]].min()
+        elif self.match[var][0] == &#34;max&#34;:
+            if weighted:
+                val_ind = (
+                    self.df_index[self.match[var][1]][self.weights_ &gt; 0]
+                ).max()
+            else:
+                val_ind = self.df_index[self.match[var][1]].max()
+        elif self.match[var][0] == &#34;mean&#34;:
             if weighted:
                 val_ind = (
                     self.df_index[self.match[var][1]] * self.weights_scaled_

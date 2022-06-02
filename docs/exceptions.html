@@ -63,17 +63,18 @@ class StatisticException(Exception):
 
     def __init__(self, *args):
         super().__init__()
-        self.statistic = args[0]
+        self.stat = args[0]
 
     def __str__(self):
         return (
-            &#34;Supported statistics are (&#39;mean&#39;, &#39;std&#39;), provided as the first item in&#34;
-            + f&#34; the match dictionary values. &#39;{self.statistic}&#39; provided.&#34;
+            &#34;Supported statistics are (&#39;mean&#39;, &#39;std&#39;, &#39;min&#39;, &#39;max&#39;), provided as the &#34;
+            + f&#34;first item in the match dictionary values. Provided: &#39;{self.stat}&#39;&#34;
         )
 
 
-class MeanConfigException(Exception):
-    &#34;&#34;&#34;Raised if match dictionary is incorrectly configured for mean statistic&#34;&#34;&#34;
+class MeanMinMaxConfigException(Exception):
+    &#34;&#34;&#34;Raised if match dictionary is incorrectly configured for mean/min/max
+    statistic&#34;&#34;&#34;
 
     def __init__(self, *args):
         super().__init__()
@@ -179,18 +180,20 @@ class ConfigException(Exception):
 <li>builtins.BaseException</li>
 </ul>
 </dd>
-<dt id="indcomp.exceptions.MeanConfigException"><code class="flex name class">
-<span>class <span class="ident">MeanConfigException</span></span>
+<dt id="indcomp.exceptions.MeanMinMaxConfigException"><code class="flex name class">
+<span>class <span class="ident">MeanMinMaxConfigException</span></span>
 <span>(</span><span>*args)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Raised if match dictionary is incorrectly configured for mean statistic</p></div>
+<div class="desc"><p>Raised if match dictionary is incorrectly configured for mean/min/max
+statistic</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MeanConfigException(Exception):
-    &#34;&#34;&#34;Raised if match dictionary is incorrectly configured for mean statistic&#34;&#34;&#34;
+<pre><code class="python">class MeanMinMaxConfigException(Exception):
+    &#34;&#34;&#34;Raised if match dictionary is incorrectly configured for mean/min/max
+    statistic&#34;&#34;&#34;
 
     def __init__(self, *args):
         super().__init__()
@@ -254,12 +257,12 @@ been calculated</p></div>
 
     def __init__(self, *args):
         super().__init__()
-        self.statistic = args[0]
+        self.stat = args[0]
 
     def __str__(self):
         return (
-            &#34;Supported statistics are (&#39;mean&#39;, &#39;std&#39;), provided as the first item in&#34;
-            + f&#34; the match dictionary values. &#39;{self.statistic}&#39; provided.&#34;
+            &#34;Supported statistics are (&#39;mean&#39;, &#39;std&#39;, &#39;min&#39;, &#39;max&#39;), provided as the &#34;
+            + f&#34;first item in the match dictionary values. Provided: &#39;{self.stat}&#39;&#34;
         )</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -320,7 +323,7 @@ been calculated</p></div>
 <h4><code><a title="indcomp.exceptions.ConfigException" href="#indcomp.exceptions.ConfigException">ConfigException</a></code></h4>
 </li>
 <li>
-<h4><code><a title="indcomp.exceptions.MeanConfigException" href="#indcomp.exceptions.MeanConfigException">MeanConfigException</a></code></h4>
+<h4><code><a title="indcomp.exceptions.MeanMinMaxConfigException" href="#indcomp.exceptions.MeanMinMaxConfigException">MeanMinMaxConfigException</a></code></h4>
 </li>
 <li>
 <h4><code><a title="indcomp.exceptions.NoWeightsException" href="#indcomp.exceptions.NoWeightsException">NoWeightsException</a></code></h4>
