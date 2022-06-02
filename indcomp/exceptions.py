@@ -34,17 +34,18 @@ class StatisticException(Exception):
 
     def __init__(self, *args):
         super().__init__()
-        self.statistic = args[0]
+        self.stat = args[0]
 
     def __str__(self):
         return (
-            "Supported statistics are ('mean', 'std'), provided as the first item in"
-            + f" the match dictionary values. '{self.statistic}' provided."
+            "Supported statistics are ('mean', 'std', 'min', 'max'), provided as the "
+            + f"first item in the match dictionary values. Provided: '{self.stat}'"
         )
 
 
-class MeanConfigException(Exception):
-    """Raised if match dictionary is incorrectly configured for mean statistic"""
+class MeanMinMaxConfigException(Exception):
+    """Raised if match dictionary is incorrectly configured for mean/min/max
+    statistic"""
 
     def __init__(self, *args):
         super().__init__()
