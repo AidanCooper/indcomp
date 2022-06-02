@@ -30,5 +30,5 @@ setup(
     ],
     packages=["indcomp"],
     include_package_data=True,
-    install_requires=["numpy", "scipy", "pandas", "matplotlib"],
+    install_requires=["numpy", "scipy", "pandas", "matplotlib", "pdoc3"],
 )
